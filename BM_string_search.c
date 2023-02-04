@@ -5,6 +5,11 @@
 #include <unistd.h>
 #include <string.h>
 
+/*
+Original code -> https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore_string-search_algorithm
+
+*/
+
 #define ALPHABET_LEN 256
 #define max(a, b) ((a < b) ? b : a)	// If Condition is true ? then value X : otherwise value Y
 
