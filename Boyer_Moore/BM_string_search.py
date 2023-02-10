@@ -1,6 +1,9 @@
 from typing import *
-# This version is sensitive to the English alphaget in ASCII for case-insensitive matching.
-
+# original from wiki: [https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore_string-search_algorithm]
+# This version is sensitive to the English alphabet in ASCII for case-insensitive matching.
+# To remove this feature, define alphabet_index as ord(c), and replace instances of "26"
+# with "256" or any maximum code-point you want. For Unicode you may want to match in UTF-8
+# bytes instead of creating a 0x10FFFF-sized table.
 
 ALPHAGET_SIZE = 26
 
@@ -31,7 +34,7 @@ def fundamental_preprocess(S: str) -> list[int]:
 	"""Return Z, the Fundamental Preprocessing of S.
 
 	Z[i] is the length of the substring begining at i which is also a prefix of S.
-	This pre-processing is done in 0(n) time, where n is the lenght of S.
+	This pre-processing is done in O(n) time, where n is the lenght of S.
 	"""
 	if len(S) == 0:		# Handles case of empty string
 		return []
@@ -119,3 +122,50 @@ def full_shift_table(S: str) -> list[int]:
 		longest = max(zv, longest) if zv == i + 1 else longest
 		F[-i - 1] = longest
 	return F
+
+
+
+def string_search(P, T) -> list[int]:
+	"""
+	Implementation of the Boyer-Moore string serch algorithm. This finds all
+	occurrences of P in T, and incorporates numerous ways of pre-processing the pattern
+	to determine the optimal amount to shift the string and skip comparisons. In practice it runs
+	in O(M) (and even sublinear) time, where m is the length of T. This implementation performs a
+	case-insensitive search on ASCII alphabetic characters, spaces not included.
+	"""
+	if len(P) == 0 or len(T) == 0 or len(T) < len(P):
+		return []
+
+	matches = []
+
+	# Preprocessing
+	R = bad_character_table(P)
+	L = good_suffix_table(P)
+	F = full_shift_table(p)
+
+	k = len(P) - 1 		# Represents alignment of end of P relative to T
+	previous_k = -1		# Represents alignment in previous phases (Galil's rule)
+	while k < len(T):
+		i = len(P) - 1 		# Character to compare in P
+		h = k 				# Character to compare in T
+		while i >= 0 and h > previous_k and P[i] == T[h]: 	# Matches starting from end of P
+			i -= 1
+			h -= 1
+
+		if i == -1 or h == previous_k:		# Match has been found (Galil's rule)
+			matches.append(k - len(P) + 1)
+			k += len(P) - F[1] if len(P) > 1 else 1
+		else:	# No match, shift by max of bad character and good suffix rules.
+			char_shift = i - R[alphabet_index(T[h])][i]
+			if i + 1 == len(P):		# Mismatch happened on first attempt
+				suffix_shift = 1
+			elif L[i + 1] == -1:	# Mismatch suffix does not appear anywhere in P
+				suffix_shift = len(P) - F[i + 1]
+			else:					# Matched suffix appears in P
+				suffix_shift = len(P) - 1 - L[i + 1]
+				shift = max(char_shift, suffix_shift)
+			previous_k = k if shift >= i + 1 else previous_k	# Galil's rule
+			k += shift
+
+	return matches
+
