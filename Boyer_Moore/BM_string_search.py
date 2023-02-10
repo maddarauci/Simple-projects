@@ -74,3 +74,48 @@ def bad_character_table(S: str) -> list[list[int]]:
 	for the bad character rule in the Boyer-Moore string search algorithm, although it has a
 	much larger size thatn non-constant-time solutions.
 	"""
+	if len(S) == 0:
+		return [[] for a in range(ALPHAGET_SIZE)]
+	R = [[-1] for a in range(ALPHAGET_SIZE)]
+	alpha = [-1 for a in range(ALPHAGET_SIZE)]
+	for i, c in enumerate(S):
+		alpha[alphabet_index(c)] = i
+		for j, a in enumerate(alpha):
+			R[j].append(a)
+	return R
+
+
+def good_suffix_table(S: str) -> list[int]:
+	"""
+	Generates L for S, an array used in the implementation of the strong good suffix rule.
+	L[i] = k, the largest position in S such that S[i:] (the suffix of S starting at i) matches
+	a suffix of S[:k] (a substring in S ending at k). Used in Boyer-Moore, L gives an amount to
+	shift P relative to T such that no instances of P in T are skipped and a suffix of p[:L[i]]
+	matches the substring of T matched by a suffix of P in the previous match attempt.
+	Specifically, if the mismatch took place at position i-1 in P, the shift magnitude is given
+	By the equation len(P) - L[i]. In the case that L[i] = -1, the full shift table is used.
+	Since only proper suffixes matter, L[0] = -1.
+	"""
+	L = [-1 for c in S]
+	N = fundamental_preprocess(S[::-1])		# S[::-1] reverse S
+	N.reverse()
+	for j in range(0, len(S) - 1):
+		i = len(S) - N[j]
+		if i != len(S):
+			L[i] = j
+	return L
+
+def full_shift_table(S: str) -> list[int]:
+	"""
+	Generates F for S, an array used in a special case of the good suffix rule in the Boyer-Moore
+	string search algorithm. F[i] is the length of the longest suffix of S[i:] that is also a
+	prefix of S. In the cases it is used, the shift magnitude of the pattern P relative
+	to the text T is len(P) - F[i] for a mismatch occuring at i-1.
+	"""
+	F = [0 for c in S]
+	Z = fundamental_preprocess(S)
+	longest = 0
+	for i, zv in enumerate(reversed(Z)):
+		longest = max(zv, longest) if zv == i + 1 else longest
+		F[-i - 1] = longest
+	return F
