@@ -2,7 +2,7 @@ from typing import *
 # This version is sensitive to the English alphaget in ASCII for case-insensitive matching.
 
 
-ALPHAGET_SIZE 26
+ALPHAGET_SIZE = 26
 
 def alphabet_index(c: str) -> int:
 	"""Return the index of the given character in the English alphabet,
@@ -48,5 +48,29 @@ def fundamental_preprocess(S: str) -> list[int]:
 	for i in range(2 + z[1], len(S)):
 		if i <= r:		# i falls within existing z-box
 			k = i - l
+			b = z[k]
+			a = r - i + 1
+			if b < a:	# b ends within existing z-box
+				z[i] = b
+			else:	# b ends at or after the end of the z-box, we need to do and explicit
+				# match to the right of the z-box.
+				z[i] = a + match_length(S, a, r + 1)
+				l = i
+				r = i + z[i] - 1
+		else:	# i does not reside within existing z-box
+			z[i] = match_length(S, 0, i)
+			if z[i] > 0:
+				l = i
+				r = i + z[i] - 1
+	return z
 
 
+def bad_character_table(S: str) -> list[list[int]]:
+	"""
+	Generates R for S, which is an array indexed by the position of some character C in the English alphabet.
+	At that index in R is an array of lenght |S|+1, specifying for each index i in S (plus the index after S)
+	the next location of character c encountered when
+	traversing S from right to the left starting at i. This is used for a constant-time lookup
+	for the bad character rule in the Boyer-Moore string search algorithm, although it has a
+	much larger size thatn non-constant-time solutions.
+	"""
